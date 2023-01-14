@@ -4,12 +4,12 @@ from apispec_webframeworks.flask  import FlaskPlugin
 from flask import Flask, jsonify
 from azure.identity import EnvironmentCredential 
 from azure.storage.blob import BlobServiceClient
-import json 
+import json, os, time
 
 
 app = Flask(__name__)
 
-with open("app.conf", "r") as config:
+with open("/etc/app.conf", "r") as config:
     data = json.load(config)
     container_name = data["storage_config"]["container_name"]
     storage_account_url = data["storage_config"]["storage_account_url"]
