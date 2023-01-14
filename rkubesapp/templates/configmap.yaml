@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  app.conf: |
+    {
+      "storage_config": {
+      "storage_account_url" : {{ .Values.storageAccountUrl | quote }},
+      "container_name" : {{ .Values.containerName | quote }}
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-appconfig
