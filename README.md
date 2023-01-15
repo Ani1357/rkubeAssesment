@@ -1,5 +1,5 @@
   <h3 align="center">Simple Rest API Assesment</h3>
-
+  <a name="readme-top"></a>
 
 
 
@@ -74,6 +74,38 @@ In oder to deploy the application you must have
 		* note down the outputted credentials, will use them later
 	* create a role `
 	az role assignment create --assignee  {appId} --scope /subscriptions/{subscriptionName} --role  {roleName} `
+4. Create the AKS Cluster: 
+```bash
+# Set Resource Group Name 
+RGNAME=otomi
+# Set Region (Location) or any other location
+LOCATION=westeurope
+# Create Resource Group
+az group create -n $RGNAME -l $LOCATION
+# Set Cluster name
+NAME=quickstart
+CLUSTER_NAME=otomi-aks-$NAME
+
+# Create AKS cluster
+az aks create --name $CLUSTER_NAME \
+--resource-group $RGNAME \
+--location $LOCATION \
+--vm-set-type VirtualMachineScaleSets \
+--nodepool-name otomipool \
+--node-count 1 \
+--node-vm-size Standard_F8s_v2 \
+--kubernetes-version 1.23.8 \
+--enable-cluster-autoscaler \
+--min-count 1 \
+--max-count 3 \
+--max-pods 100 \
+--network-plugin azure \
+--network-policy calico \
+--outbound-type loadBalancer \
+--uptime-sla \
+--generate-ssh-keys
+```
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Installation
 
