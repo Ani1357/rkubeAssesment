@@ -82,13 +82,11 @@ In oder to deploy the application you must have
 	* `helm repo add redkubes https://ani.al/charts` 
 2. Update the helm repo
    * `helm repo update`
-3. Pull the helm chart
-	* `helm pull rkubesapp/rkubesapp`
-4. Create a values file to configure the app
-	* Run this command to create a values file called myvalues.yaml  `helm show values rkubesapp-0.1.0.tgz > myvalues.yaml`
-	* Edit the myvalues.yaml file by updating the desired values. The  app needs this values to work: 
+3. Create a values file to configure the app
+	* run this command to create a values file called myvalues.yaml  `helm show values rkubesapp/rkubesapp > myvalues.yaml`
+	* edit the myvalues.yaml file by updating the desired values. The  app needs this values to work: 
 	`azureClientID, azureClientSecret, azureTenantID, storageAccountUrl,containerName `
-5. install the helm chart `helm install rkubes rkubesapp/rkubesapp -f myvalues.yaml`
+4. Install the helm chart `helm install rkubes rkubesapp/rkubesapp -f myvalues.yaml`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
