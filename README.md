@@ -1,3 +1,4 @@
+
   <h3 align="center">Simple Rest API Assesment</h3>
   <a name="readme-top"></a>
 
@@ -35,18 +36,18 @@
 ## About The Project
 
 
-This project is about creating an app that list the blob files inside an Azure Blob Storage Container.
-The app will use an App registration(service principal) for authorization/authentication to the azure API.
+This project is about creating an simple python app that list the blob files inside an Azure Blob Storage Container.
+The app will use an App registration(service principal) for authorization/authentication to the azure API. The app will expose an endpoint where a REST API will be served.
 
 
 
 ### Built With
 
-This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
+List any major frameworks/libraries used:
 
-Python
-Helm
-Docker
+[Flask](https://flask.palletsprojects.com/en/2.2.x/) web framework
+[Azure Python SDK](https://learn.microsoft.com/en-us/azure/developer/python/sdk/azure-sdk-overview) for communicating with Azure's API
+[Flasgger](https://github.com/flasgger/flasgger) for the Swagger UI
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -56,55 +57,93 @@ Follow the steps below to install the application on your Kubernetes cluster.
 ### Prerequisites
 
 In oder to deploy the application you must have
-* a Kubernetes cluster you can access
-* kubectl installed and a valid kubeconfig with which to connect to the cluster
-* helm installed
-* the azure service principal credentials, azure storage account url and azure Blob storage container name 
+* a Kubernetes cluster you can access (see **Creating the Azure resources** section)
+* [kubectl installed](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) and a valid kubeconfig with which to connect to the cluster
+* [helm installed](https://helm.sh/docs/intro/install/)
+* the azure service principal credentials, azure storage account url and azure Blob storage container name (see **Creating the Azure resources** section)
 
 #### Creating the Azure resources
 1. Login to your azure account via azure-cli:
 	* install [azure-cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 	* [sign in with azure-cli](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
 2. Create a Blob Storage 
-	* create a resource group `az group create {rg-name} --location {location}`
-	* create the blob `az storage account create --name  {storage-account} --resource-group  {resource-group} --location  {location} --sku Standard_ZRS --encryption-services blob`
-	* create a container `az storage container create --account-name  {storage-account} --name  {container} --auth-mode login`
+	* create a resource group 
+		```bash
+		# Set Resource Group Name 
+		RGNAME="rkubes-rg"
+		# Set Region (Location) or any other location
+		LOCATION="westeurope"
+		# Create Resource Group
+		az group create -n $RGNAME -l $LOCATION
+		```
+	* create the blob 
+		```bash
+		#Set Storage Account Name.
+		SA_NAME="rkubesblobstorage" # Must be globaly unique. If already in use try adding a random number as a suffix (ex. SA_NAME="rkubesblobstorage${RANDOM}")
+		az storage account create --name  $SA_NAME --resource-group $RGNAME --location  $LOCATION --sku Standard_ZRS --encryption-services blob
+		```
+	* create a container 
+		```bash
+		# Set container name
+		CONTAINER_NAME="democontainer"
+		az storage container create --account-name $SA_NAME --name  $CONTAINER_NAME --auth-mode login
+		```
 3. Create a service principal
-	* create a service principal `az ad sp create-for-rbac --name {service-principal-name}`
+	* create a service principal 
+		```bash
+		# Set the service principal name
+		SP_NAME="rkubesapp-sp"
+		az ad sp create-for-rbac --name $SP_NAME
+		 ```
 		* note down the outputted credentials, will use them later
-	* create a role `
-	az role assignment create --assignee  {appId} --scope /subscriptions/{subscriptionName} --role  {roleName} `
+	* create a role 
+		```bash
+		# Get the blob storage resource id
+		SA_ID=$(az storage account list --query "[?name=='${SA_NAME}'].id" -otsv)
+		# Set AZURE_CLIENT_ID. It was outputed in Step 3.1 when creating the Service principal
+		# It can also be printed via az cli as showed below
+		AZURE_CLIENT_ID=$(az ad app list --query "[?displayName=='${SP_NAME}'].appId" -otsv)
+		# Set the role name
+		ROLE_NAME='rkubes_app_role'
+		az role assignment create --assignee $AZURE_CLIENT_ID --scope $SA_ID --role $ROLE_NAME ```
 4. Create the AKS Cluster: 
-```bash
-# Set Resource Group Name 
-RGNAME=otomi
-# Set Region (Location) or any other location
-LOCATION=westeurope
-# Create Resource Group
-az group create -n $RGNAME -l $LOCATION
-# Set Cluster name
-NAME=quickstart
-CLUSTER_NAME=otomi-aks-$NAME
 
-# Create AKS cluster
-az aks create --name $CLUSTER_NAME \
---resource-group $RGNAME \
---location $LOCATION \
---vm-set-type VirtualMachineScaleSets \
---nodepool-name otomipool \
---node-count 1 \
---node-vm-size Standard_F8s_v2 \
---kubernetes-version 1.23.8 \
---enable-cluster-autoscaler \
---min-count 1 \
---max-count 3 \
---max-pods 100 \
---network-plugin azure \
---network-policy calico \
---outbound-type loadBalancer \
---uptime-sla \
---generate-ssh-keys
-```
+	```bash
+	# Set Resource Group Name 
+	AKS_RGNAME=otomi
+	# Create Resource Group
+	az group create -n $RGNAME -l $LOCATION
+	# Set Cluster name
+	NAME=quickstart
+	CLUSTER_NAME=otomi-aks-$NAME
+	
+	# Create AKS cluster
+	az aks create --name $CLUSTER_NAME \
+	--resource-group $AKS_RGNAME \
+	--location $LOCATION \
+	--vm-set-type VirtualMachineScaleSets \
+	--nodepool-name otomipool \
+	--node-count 1 \
+	--node-vm-size Standard_F8s_v2 \
+	--kubernetes-version 1.23.8 \
+	--enable-cluster-autoscaler \
+	--min-count 1 \
+	--max-count 3 \
+	--max-pods 100 \
+	--network-plugin azure \
+	--network-policy calico \
+	--outbound-type loadBalancer \
+	--uptime-sla \
+	--generate-ssh-keys
+	```
+5. Configure kubectl 
+	```bash
+	# Get the kubeconfig
+	az aks get-credentials --overwrite-existing --admin -g $AKS_RGNAME -n $CLUSTER_NAME
+	# Test it
+	kubectl get ns 
+	# It should show the default k8s namespaces
+	```
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Installation
@@ -145,8 +184,8 @@ The app will will create a service of type clusterIP. One way to access the app 
 	- [x] Write a AKS installation guide 
 - [ ] Deploy and test on minikube
 	- [ ] Write a minikube installation guide
-- [ ] Deploy on top of OTOMI
-- [ ] Update the app with functional swagger UI
+- [x] Deploy on top of OTOMI
+- [x] Update the app with functional swagger UI
 
 See the [open issues](https://github.com/Ani1357/rkubeAssesment/issues) for a full list of proposed features (and known issues).
 
@@ -189,6 +228,3 @@ Your Name - ani.argjiri@gmail.com
 Project Link: [https://github.com/Ani1357/rkubeAssesment](https://github.com/Ani1357/rkubeAssesment)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
