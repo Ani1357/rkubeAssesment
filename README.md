@@ -145,8 +145,8 @@ The app will will create a service of type clusterIP. One way to access the app 
 	- [x] Write a AKS installation guide 
 - [ ] Deploy and test on minikube
 	- [ ] Write a minikube installation guide
-- [ ] Deploy on top of OTOMI
-- [ ] Update the app with functional swagger UI
+- [x] Deploy on top of OTOMI
+- [x] Update the app with functional swagger UI
 
 See the [open issues](https://github.com/Ani1357/rkubeAssesment/issues) for a full list of proposed features (and known issues).
 
